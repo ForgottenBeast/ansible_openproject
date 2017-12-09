@@ -1,0 +1,5 @@
+- name: "Create docker volumes"
+  include: volumes.yml
+  become: True
+  with_items:
+    - "{{ OPENPROJECT_VOLUME }}"

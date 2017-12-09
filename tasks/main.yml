@@ -1,0 +1,82 @@
+- name: "Create proxy_net if it does not exist"
+  become: True
+  tags:
+    - openroject_deploy
+    - openproject_setup
+  docker_network:
+    name: proxy_net
+
+- include: create_volumes.yml
+  become: True
+  tags:
+    - openproject_volumes_setup
+    - openproject_setup
+
+- include: setup.yml
+  become: True
+  tags: openproject_setup
+
+- include: backup.yml
+  become: True
+  tags: openproject_all_backup
+
+
+- include: restore.yml
+  become: True
+  tags: openproject_all_restore
+
+- name: "Allow docker containers to communicate with the outside"
+  become: True
+  tags:
+   - openproject_deploy
+   - openproject_restore
+  command: iptables -t nat -A POSTROUTING -s 173.16.0.0/12 ! -d 172.16.0.0/12 -j MASQUERADE
+
+- name: "Stop openproject container"
+  become: True
+  tags: openproject_update
+  docker_container:
+    name: openproject
+    state: absent
+
+- name: "Start openproject container w/ ssl"
+  when: SSL == True
+  become: True
+  tags:
+    - openproject_deploy
+    - openproject_update
+    - openproject_restore
+  docker_container:
+    name: openproject
+    image: openproject/community:{{OPENPROJECT_VERSION}}
+    pull: True
+    state: started
+    env:
+     VIRTUAL_HOST: "{{ openproject_domain_name }}"
+     LETSENCRYPT_HOST: "{{ openproject_letsencrypt_domain_name }}"
+     LETSENCRYPT_EMAIL: "{{ openproject_letsencrypt_mail }}"
+     LETSENCRYPT_TEST: "{{ openproject_letsencrypt_testmode }}"
+
+    networks:
+      - name: proxy_net
+    volumes:
+      - "{{ OPENPROJECT_VOLUME }}:/var/lib/openproject"
+
+- name: "Start openproject container w/o SSL"
+  become: True
+  when: SSL == False
+  tags:
+    - openproject_update
+    - openproject_deploy
+    - openproject_restore
+  docker_container:
+    name: openproject
+    image: openproject/community:{{OPENPROJECT_VERSION}}
+    pull: True
+    state: started
+    env:
+     VIRTUAL_HOST: "{{ openproject_domain_name }}"
+    networks:
+      - name: proxy_net
+    volumes:
+      - "{{ OPENPROJECT_VOLUME }}:/var/lib/openproject"

@@ -1,0 +1,29 @@
+- name: "Copy data from backup folder to remote host"
+  tags:
+    - openproject_restore
+    - openproject_db_restore
+  copy:
+    src: "{{ item }}"
+    dest: /tmp/{{ item }}
+  with_items:
+    - "{{ OPENPROJECT_BACKUP_FILE }}"
+
+- name: "restore data from backup to openproject"
+  tags: openproject_restore
+  shell: |
+    docker run --rm -i -v {{ OPENPROJECT_VOLUME }}:/openproject -v /tmp:/backup:ro \
+        {{ alpine_image }} \
+        sh -c "\
+        apk update;\
+        apk add -y tar;\
+        rm -rf /openproject/* ;\
+        tar -C /openproject/ -xjf /backup/{{ OPENPROJECT_BACKUP_FILE }};"
+
+- name: "Remove backup data"
+  tags:
+    - openproject_restore
+  file:
+    name: /tmp/{{ item }}
+    state: absent
+  with_items:
+    - "{{ OPENPROJECT_BACKUP_FILE }}"

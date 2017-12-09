@@ -1,0 +1,25 @@
+- name: "Update local openproject clean image"
+  docker_image:
+      name: openproject/community:{{OPENPROJECT_VERSION}}
+    state: present
+    force: True
+    pull: True
+
+- name: "Start temporary clean openproject service to copy files"
+  docker_container:
+    name: tmp_openproject
+    image: openproject/community:{{OPENPROJECT_VERSION}}
+    state: started
+    volumes:
+      - "{{ OPENPROJECT_VOLUME }}:/openproject_files"
+
+- name: "Copy clean files to docker volumes"
+  shell: |
+    docker exec tmp_openproject bash -c "sudo cp -a /var/openproject_home/. /openproject_files;"
+
+- name: "Stop temporary services"
+  docker_container:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - tmp_openproject

@@ -1,0 +1,9 @@
+OPENPROJECT_VOLUME: openproject
+OPENPROJECT_BACKUP_FILE: openproject.tar.bz2
+openproject_letsencrypt_domain_name: openproject.mysite.xyz
+openproject_domain_name: "openproject.mysite.xyz,openproject.aizeroarearazzr.onion"
+openproject_letsencrypt_mail: whatever@thing.fthagn
+openproject_letsencrypt_testmode: "true"
+SSL: False
+
+OPENPROJECT_VERSION: "7"

@@ -1,0 +1,17 @@
+- name: "Backup openproject volumes"
+  tags: openproject_backup
+  shell: |
+    docker run --rm -i -v {{ JENKINS_VOLUME }}:/volume:ro -v /tmp:/backup {{ alpine_image }} \
+       tar -cjf /backup/openproject_backup_{{ inventory_hostname }}_{{ ansible_date_time.date }}.tar.bz2 -C /volume ./
+
+- name: "Retrieve openproject backup file"
+  tags: openproject_backup
+  fetch:
+    flat: True
+    src: /tmp/openproject_backup_{{ inventory_hostname }}_{{ ansible_date_time.date }}.tar.bz2
+    dest: "{{ playbook_dir }}/openproject_backup_{{ inventory_hostname }}_{{ ansible_date_time.date }}.tar.bz2"
+
+- name: "Clean up backup files"
+  file:
+    name: "/tmp/openproject_backup_{{ inventory_hostname }}_{{ ansible_date_time.date }}.tar.bz2"
+    state: absent
